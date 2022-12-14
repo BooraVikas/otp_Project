@@ -1,7 +1,6 @@
 const Joi = require('joi');
 const Student = require('../models/student');
-
-const Datahelper = require('../DataHelper/datahelper')
+const Datahelper = require('../DataHelper/datahelper');
 const _Datahelper = new Datahelper();
 
 
@@ -17,7 +16,7 @@ const OTPgenerate = async () => {
 const login_method = async (req, res) => {
     try {
         const { email } = req.body
-
+        
         const dataRequired = Joi.object({
             email: Joi.string().email().required(),
         });
@@ -28,26 +27,22 @@ const login_method = async (req, res) => {
 
             const userData = await Student.findOne({ where: { email: email } });
             if (userData) {
-
                 let OtpGenerated = await OTPgenerate({})
 
                 const userResult = {
                     otp: OtpGenerated
                 }
-
                 const updateData = await Student.update(userResult, {
                     where: {
                         id: userData.id
                     }
                 })
-
                 const response = {
                     success: true,
                     data: updateData
                 }
                 res.status(200).json({ success: true, msg: "login successfully", data: userResult })
                 console.log(response)
-
             } else {
                 res.status(400).json({ success: false, msg: "login credentials dont match" })
             }
@@ -56,7 +51,6 @@ const login_method = async (req, res) => {
         console.log(error)
     }
 }
-
 
 const verifyOTP = async (req, res) => {
 
@@ -71,39 +65,47 @@ const verifyOTP = async (req, res) => {
             _id: getStudentData.id,
             token: tokenData
         }
-
-        const response = {
-            success: true,
-            data: Result
-        }
         res.status(200).json({ success: true, msg: "login successfully", data: Result })
-        console.log(response)
-
     } else {
         res.status(400).json({ success: false, msg: "login credentials dont match" })
     }
 }
 
-
 const getProfile = async (req, res) => {
     const getUser = await Student.findOne({
         where: {
-            id: req.params.id
+            id: req.user.user_id
         }
     })
-    res.status(200).json({ success: true, msg: "profile details", data: getUser })
+    if (getUser) {
+        res.status(200).json({ success: true, msg: "profile details", data: getUser })
+    } else {
+        res.status(400).json({ success: false, msg: "user does not exist" })
+    }
 }
 
-
-const updateProfile = async(req,res)=>{
-    const updates = req.body
-    const updatUser = await Student.update(updates, {
-        where: {
-            id: req.params.id
-        }
+const updateProfile = async (req, res) => {
+    const dataNeeded = Joi.object({
+        name: Joi.string(),
+        email: Joi.string(),
+        address: Joi.string()
     })
-    res.status(200).json({ data: updatUser })
+    if (dataNeeded.validate(req.body).error) {
+        res.status(400).send(dataNeeded.validate(req.body).error.details)
+    } else {
+        const updates = req.body
+
+        const updatUser = await Student.update(updates, {
+            where: {
+                id: req.user.user_id
+            }
+        })
+        if (updatUser) {
+            res.status(200).json({ success: true, msg: "User details updated successfully", data: updates })
+        } else {
+            res.status(400).json({ success: false, msg: "can not update details" })
+        }
+    }
 }
 
-
-module.exports = { login_method, verifyOTP, getProfile , updateProfile}
+module.exports = { login_method, verifyOTP, getProfile, updateProfile }

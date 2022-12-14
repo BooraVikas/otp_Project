@@ -12,6 +12,9 @@ const Student = sequelize.define("user", {
   email: {
     type: Sequelize.STRING
   },
+  address:{
+   type : Sequelize.STRING
+  },
    otp : {
     type : Sequelize.INTEGER
    }
